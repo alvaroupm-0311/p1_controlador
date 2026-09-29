@@ -74,5 +74,6 @@ static void convertir(const char* fich_video, const char* dir_resultados)
 	 * -q:v 2: calidad alta para el JPEG resultante. */
 	snprintf(orden, sizeof(orden), "ffmpeg -y -i '%s' -vframes 1 -q:v 2 '%s'", fich_video, nombre_destino);
 	fprintf(stderr, "AVISO: La versión baśica del programa usa system() para lanzar procesos nuevos. Los estudiantes deben cambiarla por fork-exec-wait\n");
-	system(orden);
+	//system(orden);
+    execlp("ffmpeg", "ffmpeg", "-y", "-i", fich_video, "-vframes", "1", "-q:v", "2", nombre_destino, NULL);
 }
