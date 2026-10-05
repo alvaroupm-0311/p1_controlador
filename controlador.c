@@ -23,7 +23,7 @@
 #include <sysexits.h>
 
 //Constante de ejecucion
-#define HIJOS_MAX = 4;
+#define HIJOS_MAX 4;
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
@@ -41,16 +41,32 @@ int main(int argc, char** argv)
 	int hijos_activos = 0;
 
 	for (int i = 2; i < argc; i++){
+		while(hijos_activos>=HIJOS_MAX){
+			wait(NULL);
+			hijos_activos --;
+		} 
+		pid_t PID_HIJO = fork();
+		if(PID_HIJO == 0){
 
-		if(fork() == 0){
 			printf("Procesando video '%d' \n", i);
 			convertir(argv[i], dir_resultados);
 			exit(EX_OK);
+
+		}else if (PID_HIJO <0){
+			perror("Hubo un fallo\n");
+			
 		}else{
-			printf("Hubo un fallo\n");
-		}
-		wait(NULL);
+
+			hijos_activos ++;
+		} 
+		
 	}
+
+	while(hijos_activos>0){
+		wait(NULL);
+		hijos_activos --;
+	} 
+
 	exit(EX_OK);
 }
 
