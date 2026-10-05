@@ -13,13 +13,17 @@
  *   Correo:
  *
  *********************************************************/
-
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/param.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sysexits.h>
+
+//Constante de ejecucion
+#define HIJOS_MAX = 4;
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
@@ -33,8 +37,20 @@ int main(int argc, char** argv)
 		exit(EX_USAGE);
 	}
 	dir_resultados = argv[1];
-	for (int i = 2; i < argc; i++)
-		convertir(argv[i], dir_resultados);
+
+	int hijos_activos = 0;
+
+	for (int i = 2; i < argc; i++){
+
+		if(fork() == 0){
+			printf("Procesando video '%d' \n", i);
+			convertir(argv[i], dir_resultados);
+			exit(EX_OK);
+		}else{
+			printf("Hubo un fallo\n");
+		}
+		wait(NULL);
+	}
 	exit(EX_OK);
 }
 
@@ -73,7 +89,7 @@ static void convertir(const char* fich_video, const char* dir_resultados)
 	 * -vframes 1: extrae un único fotograma.
 	 * -q:v 2: calidad alta para el JPEG resultante. */
 	snprintf(orden, sizeof(orden), "ffmpeg -y -i '%s' -vframes 1 -q:v 2 '%s'", fich_video, nombre_destino);
-	fprintf(stderr, "AVISO: La versión baśica del programa usa system() para lanzar procesos nuevos. Los estudiantes deben cambiarla por fork-exec-wait\n");
+	//fprintf(stderr, "AVISO: La versión baśica del programa usa system() para lanzar procesos nuevos. Los estudiantes deben cambiarla por fork-exec-wait\n");
 	//system(orden);
     execlp("ffmpeg", "ffmpeg", "-y", "-i", fich_video, "-vframes", "1", "-q:v", "2", nombre_destino, NULL);
 }
