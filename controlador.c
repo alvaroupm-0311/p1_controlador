@@ -28,18 +28,16 @@
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
-static void esperar_hijos(int hijos_activos, int exitos, int fallos);
+static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos);
 
 int main(int argc, char** argv)
 {
 	const char* dir_resultados;
-
 	if (argc < 3) {
 		uso();
 		exit(EX_USAGE);
 	}
 	dir_resultados = argv[1];
-	
 	int hijos_activos = 0;
 	int exitos = 0;
 	int fallos = 0;
@@ -48,14 +46,13 @@ int main(int argc, char** argv)
 
 	for (int i = 2; i < argc; i++){
 		while(hijos_activos>=HIJOS_MAX){
-			esperar_hijos(hijos_activos, exitos, fallos);
+			esperar_hijos(&hijos_activos, &exitos, &fallos);
 		} 
 		pid_t PID_HIJO = fork();
 		if(PID_HIJO == 0){
 
 			printf("Procesando video '%d' \n", i);
 			convertir(argv[i], dir_resultados);
-			exit(EX_OK);
 
 		}else if (PID_HIJO <0){
 			perror("Hubo un fallo\n");
@@ -68,7 +65,7 @@ int main(int argc, char** argv)
 	}
 
 	while(hijos_activos>0){
-		esperar_hijos(hijos_activos, exitos, fallos);
+		esperar_hijos(&hijos_activos, &exitos, &fallos);
 	} 
 
 	time_t fin = time(NULL);
@@ -119,8 +116,10 @@ static void convertir(const char* fich_video, const char* dir_resultados)
 	//fprintf(stderr, "AVISO: La versión baśica del programa usa system() para lanzar procesos nuevos. Los estudiantes deben cambiarla por fork-exec-wait\n");
 	//system(orden);
     execlp("ffmpeg", "ffmpeg", "-y", "-i", fich_video, "-vframes", "1", "-q:v", "2", nombre_destino, NULL);
+	perror("execlp");
+	exit(EXIT_FAILURE);
 }
-static void esperar_hijos(int hijos_activos, int exitos, int fallos){
+static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos){
 	int estado;
 	pid_t pid = wait(&estado);
 	if(pid<0){
@@ -128,11 +127,11 @@ static void esperar_hijos(int hijos_activos, int exitos, int fallos){
 		return;			
 	}
 
-	hijos_activos--;
+	(*hijos_activos)--;
 
 	if(WIFEXITED(estado) && WEXITSTATUS(estado) == 0)
-		exitos++;
+		(*exitos)++;
 	else
-		fallos++;
+		(*fallos)++;
 			
 }
