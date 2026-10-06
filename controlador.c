@@ -21,31 +21,34 @@
 #include <string.h>
 #include <unistd.h>
 #include <sysexits.h>
+#include <time.h>
 
 //Constante de ejecucion
-//#define HIJOS_MAX 4
+#define HIJOS_MAX 4
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
+static void esperar_hijos(int hijos_activos, int exitos, int fallos);
 
 int main(int argc, char** argv)
 {
 	const char* dir_resultados;
-	const char* max_hijos;
 
-	if (argc < 4) {
+	if (argc < 3) {
 		uso();
 		exit(EX_USAGE);
 	}
 	dir_resultados = argv[1];
-	max_hijos = argv[2];
-
+	
 	int hijos_activos = 0;
+	int exitos = 0;
+	int fallos = 0;
+
+	time_t inicio = time(NULL);
 
 	for (int i = 2; i < argc; i++){
-		while(hijos_activos>=max_hijos){
-			wait(NULL);
-			hijos_activos --;
+		while(hijos_activos>=HIJOS_MAX){
+			esperar_hijos(hijos_activos, exitos, fallos);
 		} 
 		pid_t PID_HIJO = fork();
 		if(PID_HIJO == 0){
@@ -65,9 +68,15 @@ int main(int argc, char** argv)
 	}
 
 	while(hijos_activos>0){
-		wait(NULL);
-		hijos_activos --;
+		esperar_hijos(hijos_activos, exitos, fallos);
 	} 
+
+	time_t fin = time(NULL);
+
+	printf("\tRESUMEN FINAL\n");
+	printf("\t\tNumero de exitos %d", exitos);
+	printf("\t\tNumero de fallos %d", fallos);
+	printf("\t\tTiempo de ejecucion %0.f", difftime(fin, inicio));
 
 	exit(EX_OK);
 }
@@ -110,4 +119,20 @@ static void convertir(const char* fich_video, const char* dir_resultados)
 	//fprintf(stderr, "AVISO: La versión baśica del programa usa system() para lanzar procesos nuevos. Los estudiantes deben cambiarla por fork-exec-wait\n");
 	//system(orden);
     execlp("ffmpeg", "ffmpeg", "-y", "-i", fich_video, "-vframes", "1", "-q:v", "2", nombre_destino, NULL);
+}
+static void esperar_hijos(int hijos_activos, int exitos, int fallos){
+	int estado;
+	pid_t pid = wait(&estado);
+	if(pid<0){
+		perror("wait");
+		return;			
+	}
+
+	hijos_activos--;
+
+	if(WIFEXITED(estado) && WEXITSTATUS(estado) == 0)
+		exitos++;
+	else
+		fallos++;
+			
 }
