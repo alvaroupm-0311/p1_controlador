@@ -1,2 +1,17 @@
+# Videos de entrada y fotogramas generados: no forman parte del codigo fuente
 orig/
 res/
+*.mp4
+*.mkv
+*.avi
+*.jpg
+*.jpeg
+*.png
+
+# Artefactos de compilacion (Code::Blocks u objetos intermedios)
+bin/
+obj/
+*.o
+*.cbp
+*.layout
+*.depend

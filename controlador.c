@@ -23,7 +23,7 @@
 #include <sysexits.h>
 
 //Constante de ejecucion
-#define HIJOS_MAX 4;
+//#define HIJOS_MAX 4
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
@@ -31,17 +31,19 @@ static void convertir(const char* fich_video, const char* dir_resultados);
 int main(int argc, char** argv)
 {
 	const char* dir_resultados;
+	const char* max_hijos;
 
-	if (argc < 3) {
+	if (argc < 4) {
 		uso();
 		exit(EX_USAGE);
 	}
 	dir_resultados = argv[1];
+	max_hijos = argv[2];
 
 	int hijos_activos = 0;
 
 	for (int i = 2; i < argc; i++){
-		while(hijos_activos>=HIJOS_MAX){
+		while(hijos_activos>=max_hijos){
 			wait(NULL);
 			hijos_activos --;
 		} 
