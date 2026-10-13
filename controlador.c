@@ -22,14 +22,17 @@
 #include <unistd.h>
 #include <sysexits.h>
 #include <time.h>
+#include <signal.h>
 
 //Constante de ejecucion
 #define HIJOS_MAX 4
+//Variable global
+static pid_t pids [HIJOS_MAX] = {0}; 
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
-static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos, pids_t *pids);
-static void manejador_SIGTERM(int sig, int *hijos_activos);
+static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos);
+static void manejador_SIGTERM(int sig);
 
 int main(int argc, char** argv)
 {
@@ -44,14 +47,13 @@ int main(int argc, char** argv)
 	int fallos = 0;
 
 	time_t inicio = time(NULL);
-	signal(SIGTERM, manejador_SIGTERM(pids));  
-	pid_t pids [HIJOS_MAX] = {0}; 
+	signal(SIGTERM, manejador_SIGTERM);  
 
 // instala el manejador	
 	
 	for (int i = 2; i < argc; i++){
 		while(hijos_activos>=HIJOS_MAX){
-			esperar_hijos(&hijos_activos, &exitos, &fallos, &pids);
+			esperar_hijos(&hijos_activos, &exitos, &fallos);
 		} 
 		pid_t PID_HIJO = fork();
 		if(PID_HIJO == 0){
@@ -75,7 +77,7 @@ int main(int argc, char** argv)
 	}
 
 	while(hijos_activos>0){
-		esperar_hijos(&hijos_activos, &exitos, &fallos, &pids);
+		esperar_hijos(&hijos_activos, &exitos, &fallos);
 	} 
 
 	time_t fin = time(NULL);
@@ -129,7 +131,7 @@ static void convertir(const char* fich_video, const char* dir_resultados)
 	perror("execlp");
 	exit(EXIT_FAILURE);
 }
-static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos, pids_t *pids){
+static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos){
 	int estado;
 	pid_t pid = wait(&estado);
 	if(pid<0){
@@ -151,8 +153,8 @@ static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos, pids_t *
 		(*fallos)++;
 			
 }
-static void manejador_SIGTERM(int sig, int *hijos_activos) {
-	for (int i = 0; i < *hijos_activos; i++)
+static void manejador_SIGTERM(int sig) {
+	for (int i = 0; i < HIJOS_MAX; i++)
 		kill(pids[i], SIGTERM);   // 1. propagar a los hijos vivos
 	while (wait(NULL) > 0);      // 2. esperar a que terminen
 	exit(0);                     
