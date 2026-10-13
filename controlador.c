@@ -27,8 +27,8 @@
 //Constante de ejecucion
 //#define HIJOS_MAX 4
 //Variables globales
-static const char* hijos_max;
-static pid_t pids [HIJOS_MAX] = {0}; 
+static int hijos_max;
+static pid_t *pids; 
 
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
@@ -44,6 +44,18 @@ int main(int argc, char** argv)
 	}
 	dir_resultados = argv[1];
 	hijos_max = argv[2];
+	if(hijox_max <0){
+		printf("Ajusta el parametro de numero de hilos\n");
+		exit(EX_USAGE);
+	}
+
+	//Definir el array
+	pids = calloc(hijos_max, sizeof(pid_t));
+	if(pids == NULL){
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
+
 	int hijos_activos = 0;
 	int exitos = 0;
 	int fallos = 0;
@@ -53,7 +65,7 @@ int main(int argc, char** argv)
 
 // instala el manejador	
 	
-	for (int i = 2; i < argc; i++){
+	for (int i = 3; i < argc; i++){
 		while(hijos_activos>=hijos_max){
 			esperar_hijos(&hijos_activos, &exitos, &fallos);
 		} 
