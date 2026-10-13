@@ -29,6 +29,7 @@
 static void uso(void);
 static void convertir(const char* fich_video, const char* dir_resultados);
 static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos);
+static void manejador_SIGTERM(int sig);
 
 int main(int argc, char** argv)
 {
@@ -43,7 +44,11 @@ int main(int argc, char** argv)
 	int fallos = 0;
 
 	time_t inicio = time(NULL);
+	signal(SIGTERM, manejador_SIGTERM);  
+	pid_t pids [HIJOS_MAX] = {0}; 
 
+// instala el manejador	
+	
 	for (int i = 2; i < argc; i++){
 		while(hijos_activos>=HIJOS_MAX){
 			esperar_hijos(&hijos_activos, &exitos, &fallos);
@@ -61,7 +66,12 @@ int main(int argc, char** argv)
 
 			hijos_activos ++;
 		} 
-		
+		for(int j=0; j<HIJOS_MAX;j++){
+			if(pids[j] == 0){
+				pids[j] = PID_HIJO;
+				break;
+			}
+		}
 	}
 
 	while(hijos_activos>0){
@@ -128,10 +138,22 @@ static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos){
 	}
 
 	(*hijos_activos)--;
+	for(int j=0; j<HIJOS_MAX; j++){
+		if(pids[j] == pid){
+			pids[j] = 0;
+			break;
+		}
+	}
 
 	if(WIFEXITED(estado) && WEXITSTATUS(estado) == 0)
 		(*exitos)++;
 	else
 		(*fallos)++;
 			
+}
+static void manejador_SIGTERM(int sig) {
+	for (int i = 0; i < *hijos_activos; i++)
+		kill(pids[i], SIGTERM);   // 1. propagar a los hijos vivos
+	while (wait(NULL) > 0);      // 2. esperar a que terminen
+	exit(0);                     
 }
