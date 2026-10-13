@@ -25,8 +25,9 @@
 #include <signal.h>
 
 //Constante de ejecucion
-#define HIJOS_MAX 4
-//Variable global
+//#define HIJOS_MAX 4
+//Variables globales
+static const char* hijos_max;
 static pid_t pids [HIJOS_MAX] = {0}; 
 
 static void uso(void);
@@ -42,6 +43,7 @@ int main(int argc, char** argv)
 		exit(EX_USAGE);
 	}
 	dir_resultados = argv[1];
+	hijos_max = argv[2];
 	int hijos_activos = 0;
 	int exitos = 0;
 	int fallos = 0;
@@ -52,7 +54,7 @@ int main(int argc, char** argv)
 // instala el manejador	
 	
 	for (int i = 2; i < argc; i++){
-		while(hijos_activos>=HIJOS_MAX){
+		while(hijos_activos>=hijos_max){
 			esperar_hijos(&hijos_activos, &exitos, &fallos);
 		} 
 		pid_t PID_HIJO = fork();
@@ -68,7 +70,7 @@ int main(int argc, char** argv)
 
 			hijos_activos ++;
 		} 
-		for(int j=0; j<HIJOS_MAX;j++){
+		for(int j=0; j<hijos_max;j++){
 			if(pids[j] == 0){
 				pids[j] = PID_HIJO;
 				break;
@@ -140,7 +142,7 @@ static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos){
 	}
 
 	(*hijos_activos)--;
-	for(int j=0; j<HIJOS_MAX; j++){
+	for(int j=0; j<hijos_max; j++){
 		if(pids[j] == pid){
 			pids[j] = 0;
 			break;
@@ -154,7 +156,7 @@ static void esperar_hijos(int *hijos_activos, int *exitos, int *fallos){
 			
 }
 static void manejador_SIGTERM(int sig) {
-	for (int i = 0; i < HIJOS_MAX; i++)
+	for (int i = 0; i < hijos_max; i++)
 		kill(pids[i], SIGTERM);   // 1. propagar a los hijos vivos
 	while (wait(NULL) > 0);      // 2. esperar a que terminen
 	exit(0);                     
